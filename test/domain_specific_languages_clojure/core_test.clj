@@ -2,6 +2,12 @@
   (:require [domain-specific-languages-clojure.core :as sut]
             [clojure.test :as t :refer :all]))
 
+(deftest normalize-tests
+  (is (= [:div {}] (sut/normalize [:div {}])))
+  (is (= [:div {}] (sut/normalize [:div])))
+  (is (= [:div {} "hello"] (sut/normalize [:div "hello"])))
+  (is (= [:div {} "hello"] (sut/normalize [:div {} "hello"]))))
+
 (deftest nil-empty-string
   (is (= (sut/unescaped "") (sut/eval-hiccup nil))))
 
@@ -13,6 +19,9 @@
 
 (deftest number-string
   (is (= (sut/unescaped "123") (sut/eval-hiccup 123))))
+
+(deftest vector-empty
+  (is (= (sut/unescaped "") (sut/eval-hiccup []))))
 
 (deftest vector-div-html
   (is (= (sut/unescaped "<div></div>") (sut/eval-hiccup [:div]))))
@@ -34,6 +43,9 @@
 
 (deftest vector-div-div-html
   (is (= (sut/unescaped "<div><div></div></div>") (sut/eval-hiccup [:div [:div]]))))
+
+(deftest vector-div-eval-div-html
+  (is (= (sut/unescaped "<div><div></div></div>") (sut/eval-hiccup [:div (sut/eval-hiccup [:div])]))))
 
 (deftest vector-div-div-br-escape-html
   (is (= (sut/unescaped "<div><div>&lt;br&gt;</div></div>") (sut/eval-hiccup [:div [:div "<br>"]]))))

@@ -34,14 +34,21 @@
     (throw (ex-info "I don't know how to escape this value." {:value s}))))
 
 (defn normalize [hiccup]
-  (let [[tag attr? & children] hiccup
-        attr (if (map? attr?)
-               attr?
-               {})
-        children (if (map? attr?)
-                   children
-                   (cons attr? children))]
-    (into [tag attr] children)))
+  (case (count hiccup)
+    1 (let [[tag] hiccup]
+        [tag {}])
+    2 (let [[tag attr?] hiccup]
+        (if (map? attr?)
+          [tag attr?]
+          [tag {} attr?]))
+    (let [[tag attr? & children] hiccup
+          attr (if (map? attr?)
+                 attr?
+                 {})
+          children (if (map? attr?)
+                     children
+                     (cons attr? children))]
+      (into [tag attr] children))))
 
 ;; hiccup -> EscapedString (HTML)
 (defn eval-hiccup [hiccup]
@@ -52,21 +59,26 @@
     (string? hiccup)
     (unescaped (escape hiccup))
 
+    (instance? EscapedString hiccup)
+    hiccup
+
     (number? hiccup)
     (unescaped (str hiccup))
 
     (vector? hiccup)
-    (let [[tag attr & children] (normalize hiccup)]
-      (unescaped
-        (str "<" (name tag)
-          (str/join
-            (for [[k v] attr]
-              (str " " (name k) "=\"" v \")))
-          ">"
+    (if (empty? hiccup)
+      (unescaped "")
+      (let [[tag attr & children] (normalize hiccup)]
+        (unescaped
+          (str "<" (name tag)
+            (str/join
+              (for [[k v] attr]
+                (str " " (name k) "=\"" v \")))
+            ">"
 
-          (str/join (map eval-hiccup children))
+            (str/join (map eval-hiccup children))
 
-          "</" (name tag) ">")))
+            "</" (name tag) ">"))))
 
     (seq? hiccup)
     (str/join (map eval-hiccup hiccup))
