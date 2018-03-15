@@ -86,6 +86,47 @@
     :else
     (throw (ex-info "I don't know how to handle this data as hiccup." {:hiccup hiccup}))))
 
+(defmacro compile-hiccup [hiccup]
+  (cond
+    (nil? hiccup)
+    (unescaped "")
+
+    (string? hiccup)
+    (escape hiccup)
+
+    (instance? EscapedString hiccup)
+    hiccup
+
+    (number? hiccup)
+    (unescaped (str hiccup))
+
+    (vector? hiccup)
+    (if (empty? hiccup)
+      (unescaped "")
+      (let [[tag attr & children] (normalize hiccup)]
+        `(unescaped
+           (str "<" ~(name tag)
+             ~@(for [[k v] attr]
+                 (str " " (name k) "=\"" v \"))
+             ">"
+
+             ~@(for [child children]
+                 `(compile-hiccup ~child))
+
+             "</" ~(name tag) ">"))))
+
+    (seq? hiccup)
+    (let [[op & args] hiccup]
+      (case op
+        if (let [[test then else] args]
+             `(if ~test
+                (compile-hiccup ~then)
+                (compile-hiccup ~else)))
+        `(eval-hiccup ~hiccup)))
+
+    :else
+    `(eval-hiccup ~hiccup)))
+
 (defn comment-component [unsanitized-text]
   (eval-hiccup
     [:div {:class "comment"}
