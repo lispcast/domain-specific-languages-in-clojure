@@ -61,7 +61,18 @@
   (is (= (sut/unescaped "<div>abc</div>")
         (sut/eval-hiccup [:div {} "abc"])))
   (is (= (sut/unescaped "<div>abc</div>")
-        (sut/compile-hiccup [:div {} "abc"]))))
+        (sut/compile-hiccup [:div {} "abc"])))
+  (is (= `(domain-specific-languages-clojure.core/unescaped
+            (clojure.core/str
+              "<"
+              "div"
+              ">"
+              (domain-specific-languages-clojure.core/compile-hiccup
+                "abc")
+              "</"
+              "div"
+              ">"))
+        (macroexpand `(sut/compile-hiccup [:div {} "abc"])))))
 
 (deftest vector-children-no-attr-html
   (is (= (sut/unescaped "<div>abc</div>") (sut/eval-hiccup [:div "abc"])))
@@ -71,7 +82,11 @@
   (is (= (sut/unescaped "<div>abc</div>")
         (sut/eval-hiccup (if true [:div {} "abc"]))))
   (is (= (sut/unescaped "<div>abc</div>")
-        (sut/compile-hiccup (if true [:div {} "abc"])))))
+        (sut/compile-hiccup (if true [:div {} "abc"]))))
+  (is (= `(if true (sut/compile-hiccup [:div {} "abc"]))
+        (macroexpand `(sut/compile-hiccup (if true [:div {} "abc"])))))
+  (is (= `(if true (sut/compile-hiccup "abc") (sut/compile-hiccup "efg"))
+        (macroexpand `(sut/compile-hiccup (if true "abc" "efg"))))))
 
 (deftest vector-if-nested-html
   (is (= (sut/unescaped "<div><span>abc</span></div>")
@@ -84,6 +99,18 @@
         (sut/eval-hiccup [:div {} (if true "abc" "efg")])))
   (is (= (sut/unescaped "<div>abc</div>")
         (sut/compile-hiccup [:div {} (if true "abc" "efg")]))))
+
+(deftest vector-children-for-html
+  (is (= (sut/unescaped "012")
+        (sut/eval-hiccup (for [a (range 3)]
+                           a))))
+  (is (= (sut/unescaped "012")
+        (sut/compile-hiccup (for [a (range 3)]
+                              a))))
+  (is (= `(for [a (range 3)]
+            (sut/compile-hiccup a))
+        (macroexpand-1 `(sut/compile-hiccup (for [a (range 3)]
+                                              a))))))
 
 (deftest vector-children-2-children-html
   (is (= (sut/unescaped "<div>abcdef</div>")

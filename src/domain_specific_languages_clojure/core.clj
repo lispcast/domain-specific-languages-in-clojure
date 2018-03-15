@@ -81,7 +81,7 @@
             "</" (name tag) ">"))))
 
     (seq? hiccup)
-    (str/join (map eval-hiccup hiccup))
+    (unescaped (str/join (map eval-hiccup hiccup)))
 
     :else
     (throw (ex-info "I don't know how to handle this data as hiccup." {:hiccup hiccup}))))
@@ -118,10 +118,17 @@
     (seq? hiccup)
     (let [[op & args] hiccup]
       (case op
-        if (let [[test then else] args]
-             `(if ~test
-                (compile-hiccup ~then)
-                (compile-hiccup ~else)))
+        if (case (count args)
+             2 (let [[test then] args]
+                 `(if ~test
+                    (compile-hiccup ~then)))
+             3 (let [[test then else] args]
+                 `(if ~test
+                    (compile-hiccup ~then)
+                    (compile-hiccup ~else))))
+        clojure.core/for (let [[bindings expression] args]
+                           `(for ~bindings
+                              (compile-hiccup ~expression)))
         `(eval-hiccup ~hiccup)))
 
     :else
