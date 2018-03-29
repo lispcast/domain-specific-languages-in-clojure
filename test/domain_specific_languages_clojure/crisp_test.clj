@@ -21,3 +21,31 @@
   (is (= 1 (sut/crisp-eval {} '(let [x 1] x))))
   (is (= 2 (sut/crisp-eval {} '(let [x 1 y 2] y))))
   (is (thrown? clojure.lang.ExceptionInfo (sut/crisp-eval {} '(let [x] y)))))
+
+(deftest function-call
+  (is (= + (sut/crisp-eval {'+ +} '+)))
+  (is (= 10 (sut/crisp-eval {'+ +} '(+ 4 6))))
+  (is (= + (sut/crisp-eval {} +)))
+  (is (sut/crisp-eval {} '(fn [] 1)))
+  (is (sut/crisp-fn? (sut/crisp-eval {} '(fn [] 1))))
+  (is (= 1 (sut/crisp-eval {} '((fn [] 1)))))
+  (is (= 2 (sut/crisp-eval {} '((fn [] 2)))))
+  ;; environment
+  (is (= 10 (sut/crisp-eval {'+ +}
+              '(let [x 5]
+                 ((fn [y]
+                    (let [z 3]
+                      (+ x y z)))
+                  2)))))
+  (is (not (sut/crisp-fn? 1)))
+
+
+  (is (thrown? clojure.lang.ExceptionInfo (sut/crisp-eval {} '(1))))
+
+  (is (= 7 (sut/crisp-eval {'+ +}
+             '(let [x 5
+                    f (fn [y] (+ x y))]
+                (f 2)))))
+
+  (is (= 1 (sut/crisp-eval {'x 1} '(let [y x] y))))
+  )
