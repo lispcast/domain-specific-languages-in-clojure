@@ -29,7 +29,7 @@
               (cond
                 (empty? binding)
                 (crisp-eval env (cons 'do body))
-                
+
                 (= 1 (count binding))
                 (throw (ex-info "Odd number of binding forms in let."
                          {:bindings binding}))
@@ -38,8 +38,7 @@
                 (let [[var val & rst] binding]
                   (crisp-eval (assoc env var val)
                     (cons 'let (cons rst body))))))))
-    
+
     :else
     (throw (ex-info "I don't know how to evaluate this expression."
              {:expression expr}))))
-
