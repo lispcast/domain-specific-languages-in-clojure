@@ -65,25 +65,25 @@
     (throw (ex-info "I don't know how to evaluate this expression."
              {:expression expr}))))
 
-(defn crisp-compile* [expr]
+(defn crisp-compile* [expr static-env]
   (cond
     (self-evaling? expr)
     (fn [env]
       expr)
 
     (symbol? expr)
-    (fn [env]
-      (if (contains? env expr)
-        (get env expr)
-        (throw (ex-info "I could not find the symbol in the environment."
-                 {:symbol expr
-                  :environment env}))))
+    (if (contains? static-env expr)
+      (fn [env]
+        (get env expr))
+      (throw (ex-info "I could not find the symbol in the environment."
+               {:symbol expr
+                :environment static-env})))
 
     (seq? expr)
     (let [[op & args] expr]
       (case op
         if (let [[testf thenf elsef]
-                 (map crisp-compile* args)]
+                 (map #(crisp-compile* % static-env) args)]
              (fn [env]
                (if (testf env)
                  (thenf env)
@@ -91,13 +91,13 @@
         quote (let [[quote-expr] args]
                 (fn [env]
                   quote-expr))
-        do (let [bodyfs (map crisp-compile* args)]
+        do (let [bodyfs (doall (map #(crisp-compile* % static-env) args))]
              (fn [env]
                (last (map #(% env) bodyfs))))
         let (let [[binding & body] args]
               (cond
                 (empty? binding)
-                (crisp-compile* (cons 'do body))
+                (crisp-compile* (cons 'do body) static-env)
 
                 (= 1 (count binding))
                 (throw (ex-info "Odd number of binding forms in let."
@@ -105,27 +105,30 @@
 
                 :else
                 (let [[var val & rst] binding
-                      valf (crisp-compile* val)
+                      valf (crisp-compile* val static-env)
                       nextf (crisp-compile*
-                              (cons 'let (cons rst body)))]
+                              (cons 'let (cons rst body))
+                              (conj static-env var))]
                   (fn [env]
                     (nextf (assoc env var (valf env)))))))
-        fn (let [[arg-list & body] args
-                 bodyf (crisp-compile* (cons 'do body))]
+        fn (let [[arg-list & body] args]
              (if (empty? arg-list)
-               (fn [env]
-                 (fn []
-                   (bodyf env)))
-               (let [nextf (crisp-compile*
+               (let [bodyf (crisp-compile* (cons 'do body)
+                             static-env)]
+                 (fn [env]
+                   (fn []
+                     (bodyf env))))
+               (let [argname (first arg-list)
+                     nextf (crisp-compile*
                              (cons 'fn (cons (rest arg-list)
-                                         body)))
-                     argname (first arg-list)]
+                                         body))
+                             (conj static-env argname))]
                  (fn [env]
                    (fn [arg1 & args]
                      (apply
                        (nextf (assoc env argname arg1))
                        args))))))
-        (let [[ff & argfs] (map crisp-compile* expr)]
+        (let [[ff & argfs] (doall (map #(crisp-compile* % static-env) expr))]
           (fn [env]
             (let [f (ff env)]
               (cond
@@ -147,5 +150,5 @@
              {:expression expr}))))
 
 
-(defmacro crisp-compile [expr]
-  `(sut/crisp-compile* '~expr))
+(defmacro crisp-compile [expr static-env]
+  `(sut/crisp-compile* '~expr '~static-env))
