@@ -1,4 +1,5 @@
-(ns domain-specific-languages-clojure.crisp)
+(ns domain-specific-languages-clojure.crisp
+  (:require [instaparse.core :as insta]))
 
 (deftype crisp-fn [env arg-list body])
 
@@ -152,3 +153,34 @@
 
 (defmacro crisp-compile [expr static-env]
   `(sut/crisp-compile* '~expr '~static-env))
+
+(def parse
+  (insta/parser
+    "
+<S> = STATEMENT*
+<STATEMENT> = IFTHENELSE | EXPRESSION SEMI | BLOCK
+<EXPRESSION> = LITERAL
+
+IFTHENELSE = IF OPEN EXPRESSION CLOSE BLOCK ELSE BLOCK
+
+BLOCK = OPENCURLY STATEMENT* CLOSECURLY
+
+<LITERAL> = NUMBER | STRING
+
+(* Keywords *)
+<IF> = <\"if\"> WS
+<ELSE> = <\"else\"> WS
+
+(* Puncutation *)
+<SEMI> = <\";\"> WS
+<OPEN> = <\"(\"> WS
+<CLOSE> = <\")\"> WS
+<OPENCURLY> = <\"{\"> WS
+<CLOSECURLY> = <\"}\"> WS
+
+NUMBER = #'\\d*[.]?\\d+' WS
+STRING = <'\"'> #'[^\"]*' <'\"'> WS
+
+<WS> = <#'\\s*'>
+
+"))

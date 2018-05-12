@@ -124,3 +124,32 @@
         (sut/crisp-compile (do d) #{})))
 
   )
+
+
+(deftest instaparse-test
+  (is (= [[:NUMBER "1"]] (sut/parse "1;")))
+  (is (= [[:NUMBER "1.9"]] (sut/parse "1.9;")))
+  (is (= [[:NUMBER ".9"]] (sut/parse ".9;")))
+  (is (= [[:NUMBER "0.9"]] (sut/parse "0.9;")))
+
+  (is (= [[:STRING "abc"]] (sut/parse "\"abc\";")))
+  (is (= [[:STRING ""]] (sut/parse "\"\";")))
+
+  (is (= [[:IFTHENELSE
+           [:NUMBER "1"]
+           [:BLOCK [:NUMBER "2"]]
+           [:BLOCK [:NUMBER "3"]]]]
+        (sut/parse "if (1) { 2; } else { 3; }")))
+
+  (is (= [[:IFTHENELSE
+           [:NUMBER "1"]
+           [:BLOCK [:NUMBER "1"] [:NUMBER "2"]]
+           [:BLOCK [:NUMBER "4"] [:NUMBER "3"]]]]
+        (sut/parse "if (1) { 1; 2; } else { 4; 3; }")))
+
+  (is (= [[:IFTHENELSE
+           [:NUMBER "1"]
+           [:BLOCK [:NUMBER "1"] [:NUMBER "2"]]
+           [:BLOCK [:NUMBER "4"] [:NUMBER "3"]]]]
+        (sut/parse "if (1) { 1; 2; } else { 4; 3; }")))
+  )

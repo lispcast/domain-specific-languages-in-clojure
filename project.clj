@@ -8,6 +8,7 @@
   :profiles {:dev {:plugins [[com.jakemccrary/lein-test-refresh "0.22.0"]
                              [io.aviso/pretty "0.1.34"]]
                    :dependencies [[pjstadig/humane-test-output "0.8.3"]
-                                  [io.aviso/pretty "0.1.34"]]
+                                  [io.aviso/pretty "0.1.34"]
+                                  [instaparse "1.4.9"]]
                    :injections [(require 'pjstadig.humane-test-output)
                                 (pjstadig.humane-test-output/activate!)]}})
