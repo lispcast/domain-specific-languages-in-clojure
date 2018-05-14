@@ -213,3 +213,30 @@ else
   (is (= [[:FUNCTIONCALL [:VARIABLE "fib"] [:ARGS [:NUMBER "1"] [:VARIABLE "q"]]]]
         (sut/parse "fib( 1, q );")))
   )
+
+
+(deftest rparse-test
+  (is (= [nil nil] (sut/rparse "")))
+  
+  (is (= [1   nil] (sut/rparse "1")))
+  (is (= [2   nil] (sut/rparse "2")))
+  (is (= [2.0 nil] (sut/rparse "2.0")))
+
+  (is (= ['abc  nil] (sut/rparse "abc")))
+  (is (= ['abc? nil] (sut/rparse "abc?")))
+
+  (is (= ["abc" nil] (sut/rparse "\"abc\"")))
+  (is (= [""    nil] (sut/rparse "\"\"")))
+
+  (is (= ['(1 2 3) nil] (sut/rparse "(1 2 3)")))
+
+  (is (= ['(1 2 3) (seq "   ")] (sut/rparse "   (1 2 3)   ")))
+
+  (is (= ['(1 2 3 (1)) nil] (sut/rparse "(1 2 3 (1))")))
+
+  (is (= ['(1 2 3 (1 (1))) nil] (sut/rparse "(1 2 3 (1 (1)))")))
+
+  (is (= ['((1)) nil] (sut/rparse "((1))")))
+
+  (is (= ['(1 2 3 (1 2 3 (4) ((( 1))))) nil] (sut/rparse "(1 2 3 (1 2 3 (4) ((( 1)))))")))
+  )

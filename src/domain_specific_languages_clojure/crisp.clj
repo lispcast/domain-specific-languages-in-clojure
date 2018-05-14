@@ -200,3 +200,111 @@ ARGS     = WS | (EXPRESSION COMMA)* EXPRESSION
 <WS> = <#'\\s*'>
 
 "))
+
+(declare rparse rparse-number rparse-symbol rparse-string rparse-list
+  gobble-whitespace)
+
+(defn rparse [s]
+  (let [[c & cs :as s] (gobble-whitespace s)]
+    (cond
+      (empty? s)
+      [nil nil]
+
+      (Character/isDigit c)
+      (rparse-number s)
+
+      (Character/isLetter c)
+      (rparse-symbol s)
+
+      (= \" c)
+      (rparse-string s)
+
+      (= \( c)
+      (rparse-list s)
+
+      :else
+      (throw (ex-info "I don't know how to parse this."
+               {:string (apply str s)})))))
+
+(defn parse-number [s]
+  (if (neg? (.indexOf s "."))
+    (Integer/parseInt s)
+    (Double/parseDouble s)))
+
+(defn rparse-number
+  ([s]
+   (rparse-number [] s))
+  ([acc [c & cs :as s]]
+   (cond
+     (empty? s)
+     [(parse-number (apply str acc)) cs]
+
+     (or (Character/isDigit c) (= \. c))
+     (recur (conj acc c) cs)
+
+     :else
+     [(parse-number (apply str acc)) s])))
+
+(defn symbol-char? [c]
+  (or
+    (Character/isLetterOrDigit c)
+    (= \+ c)
+    (= \- c)
+    (= \? c)))
+
+(defn rparse-symbol
+  ([s]
+   (rparse-symbol [] s))
+  ([acc [c & cs :as s]]
+   (cond
+     (empty? s)
+     [(symbol (apply str acc)) cs]
+
+     (symbol-char? c)
+     (recur (conj acc c) cs)
+
+     :else
+     [(symbol (apply str acc)) s])))
+
+(defn rparse-string
+  ([s]
+   (rparse-string [] (rest s)))
+  ([acc [c & cs :as s]]
+   (cond
+     (empty? s)
+     (throw (ex-info "Missing closing quotes."
+              {:string (apply str s)}))
+
+     (= \" c)
+     [(apply str acc) cs]
+
+     :else
+     (recur (conj acc c) cs))))
+
+(defn rparse-list
+  ([s]
+   (rparse-list [] (rest s)))
+  ([acc [c & cs :as s]]
+   (cond
+     (empty? s)
+     (throw (ex-info "Missing closing paren."
+              {:string (apply str s)
+               :acc acc}))
+
+     (= \) c)
+     [(seq acc) cs]
+
+     :else
+     (let [[val rst] (rparse s)]
+       (recur (conj acc val) rst)))))
+
+(defn gobble-whitespace [[c & cs :as s]]
+  (cond
+    (empty? s)
+    s
+
+    (Character/isWhitespace c)
+    (recur cs)
+
+    :else
+    s))
