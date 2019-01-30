@@ -3,7 +3,7 @@
   :url "https://purelyfunctional.tv/"
   :license {:name "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication"
             :url "http://creativecommons.org/publicdomain/zero/1.0/"}
-  :dependencies [[org.clojure/clojure "1.9.0"]
+  :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.apache.commons/commons-text "1.2"]]
   :profiles {:dev {:plugins [[com.jakemccrary/lein-test-refresh "0.22.0"]
                              [io.aviso/pretty "0.1.34"]]
